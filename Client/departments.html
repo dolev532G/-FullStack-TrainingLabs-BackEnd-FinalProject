@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Employee Management</title>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav class="mb-4">
+                <ul class="nav justify-content-center">
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="employees.html">Employees</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="add_employee.html">Add Employee</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="departments.html">Departments</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="add_department.html">New Department</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="shifts.html">Shifts</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="users.html">Users</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="login.html">Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+
+    <main>
+        <div class="container mt-4">
+            <h4 id="greeting"></h4>
+            <h1>Departments</h1>
+            <table class="table table-bordered mt-3">
+                <thead>
+                    <tr>
+                        <th>Department Name</th>
+                        <th>Department Manager</th>
+                        <th>Employees</th>
+                    </tr>
+                </thead>
+                <tbody id="departmentsTableBody">
+                    <!-- Rows will be populated here -->
+                </tbody>
+            </table>
+            <a href="add_department.html" class="btn btn-primary">New Department</a>
+        </div>
+    </main>
+
+    <script>
+        const port = sessionStorage.getItem('serverMode'); 
+        const departmentsUrl = `http://localhost:${port}/departments`;
+        const employeesUrl = `http://localhost:${port}/employees`;
+
+
+        async function fetchDepartments() {
+            const response = await fetch(departmentsUrl);
+            return await response.json();
+        }
+
+        async function fetchEmployees() {
+            const response = await fetch(employeesUrl);
+            return await response.json();
+        }
+
+        async function fetchManagerDetails(managerId) {
+            const response = await fetch(`${employeesUrl}/${managerId}`);
+            return await response.json();
+        }
+
+        async function populateDepartments() {
+            const departments = await fetchDepartments();
+            const employees = await fetchEmployees();
+            const departmentsTableBody = document.getElementById('departmentsTableBody');
+            departmentsTableBody.innerHTML = ''; // Clear existing rows
+
+            for (const department of departments) {
+                const managerDetails = await fetchManagerDetails(department.Manager);
+                const managerFullName = `${managerDetails.FirstName} ${managerDetails.LastName}`;
+                
+                const departmentEmployees = employees.filter(emp => emp.DepartmentID === department._id);
+                const employeeLinks = departmentEmployees.map(emp => 
+                    `<a href="edit_employee.html?employeeId=${emp._id}">${emp.FirstName} ${emp.LastName}</a>`
+                ).join(', ');
+
+                const row = `
+                    <tr>
+                        <td><a href="edit_department.html?departmentId=${department._id}">${department.Name}</a></td>
+                        <td>${managerFullName}</td>
+                        <td>${employeeLinks || 'No employees'}</td>
+                    </tr>
+                `;
+
+                departmentsTableBody.innerHTML += row; // Add new row to the table
+            }
+        }
+
+       
+        function displayGreeting() {
+            const fullName = sessionStorage.getItem('FullName');
+            const maxactions = sessionStorage.getItem('maxactions');
+            const greetingElement = document.getElementById('greeting');
+            if (fullName) {
+                greetingElement.textContent = `Hi ${fullName}, You have ${maxactions} actions left`;
+            } else {
+                greetingElement.textContent = 'Hi there!';
+            }
+        }
+
+        // Call the function to populate the table when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            displayGreeting();
+            populateDepartments();
+        });
+    </script>
+</body>
+</html>

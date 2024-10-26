@@ -1,0 +1,15 @@
+{
+    "_id" : ObjectId("6718c94751cd6b0e11900482"),
+    "Name" : "Research and Development",
+    "Manager" : ObjectId("671acdf1733c0b7d80484795")
+}
+{
+    "_id" : ObjectId("671a2233ffe8aee0d2d5dcf1"),
+    "Name" : "Human Resources",
+    "Manager" : ObjectId("671b9f086db89b1d35904e60")
+}
+{
+    "_id" : ObjectId("671bb72cf5a0822a2a39aaeb"),
+    "Name" : "I.T",
+    "Manager" : ObjectId("671abe995d84e800d41a922d")
+}

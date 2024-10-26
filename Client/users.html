@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Employee Management</title>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav class="mb-4">
+                <ul class="nav justify-content-center">
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="employees.html">Employees</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="add_employee.html">Add Employee</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="departments.html">Departments</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="add_department.html">New Department</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="shifts.html">Shifts</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="users.html">Users</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="login.html">Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+
+    <main>
+        <div class="container mt-4">
+            <h4 id="greeting"></h4>
+            <h1>Users</h1>
+            <table class="table table-bordered mt-3">
+                <thead>
+                    <tr>
+                        <th>Full Name</th>
+                        <th>Max Actions Allowed</th>
+                        <th>Current Actions Left</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <!-- Rows will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        const port = sessionStorage.getItem('serverMode'); 
+        const usersUrl = `http://localhost:${port}/users/`;
+
+        // Function to fetch users data from the server
+        async function fetchUsers() {
+            try {
+                const response = await fetch(usersUrl);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch users');
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching users:', error);
+                alert('Error fetching users data.');
+            }
+        }
+
+        // Function to populate the users table
+        async function populateUsers() {
+            const users = await fetchUsers();
+            const usersTableBody = document.getElementById('usersTableBody');
+            usersTableBody.innerHTML = ''; // Clear existing rows
+
+            for (const user of users) {
+                const fullName = user.FullName;
+                const maxActions = user.Num_Of_actions;
+                const currentActions = user.currentActions;
+
+                
+
+                const row = `
+                    <tr>
+                        <td>${fullName}</td>
+                        <td>${maxActions}</td>
+                        <td>${currentActions}</td>
+                    </tr>
+                `;
+                usersTableBody.innerHTML += row; // Add new row to the table
+            }
+        }
+
+        function displayGreeting() {
+            const fullName = sessionStorage.getItem('FullName');
+            const maxactions = sessionStorage.getItem('maxactions');
+            const greetingElement = document.getElementById('greeting');
+            if (fullName) {
+                greetingElement.textContent = `Hi ${fullName}, You have ${maxactions} actions left`;
+            } else {
+                greetingElement.textContent = 'Hi there!';
+            }
+        }
+
+        // Call the function to populate the table when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            displayGreeting();
+            populateUsers();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Employee Management</title>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav class="mb-4">
+                <ul class="nav justify-content-center">
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="employees.html">Employees</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="add_employee.html">Add Employee</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="departments.html">Departments</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="add_department.html">New Department</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="shifts.html">Shifts</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="users.html">Users</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="login.html">Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+
+    <div class="container">
+        <div class="greeting" id="greeting">Hi there!</div>
+        <h1>Edit Employee</h1>
+
+        <form id="employee-form">
+            <table>
+                <tr>
+                    <td><label for="employeeId">Employee ID</label></td>
+                    <td><input type="text" id="employeeId" readonly /></td>
+                </tr>
+                <tr>
+                    <td><label for="firstName">First Name</label></td>
+                    <td><input type="text" id="firstName" required /></td>
+                </tr>
+                <tr>
+                    <td><label for="lastName">Last Name</label></td>
+                    <td><input type="text" id="lastName" required /></td>
+                </tr>
+                <tr>
+                    <td><label for="department">Department</label></td>
+                    <td>
+                        <select id="department" required>
+                            <option value="">Select a department</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><label for="startWorkYear">Start Work Year</label></td>
+                    <td><input type="number" id="startWorkYear" required /></td>
+                </tr>
+            </table>
+
+            <div class="form-actions">
+                <button type="button" class="btn" onclick="updateEmployee()">Update</button>
+                <button type="button" class="btn btn-danger" onclick="deleteEmployee()">Delete</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const employeeId = new URLSearchParams(window.location.search).get('employeeId');
+        const port = sessionStorage.getItem('serverMode'); 
+        const employeeUrl = `http://localhost:${port}/employees/${employeeId}`;
+        const departmentsUrl = `http://localhost:${port}/departments`;
+        let departmentId = ""
+
+        async function fetchDepartments() {
+            try {
+                const response = await fetch(departmentsUrl);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const departments = await response.json();
+                const departmentSelect = document.getElementById('department');
+                departments.forEach(department => {
+                    const option = document.createElement('option');
+                    option.value = department._id;
+                    option.textContent = department.Name;
+                    if (department._id == departmentId)
+                        option.selected = true
+                    departmentSelect.appendChild(option);
+                });
+            } catch (error) {
+                alert('Failed to fetch departments.');
+            }
+        }
+
+        async function fetchEmployee() {
+            try {
+                const response = await fetch(employeeUrl);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const employee = await response.json();
+                document.getElementById('employeeId').value = employee._id;
+                document.getElementById('firstName').value = employee.FirstName;
+                document.getElementById('lastName').value = employee.LastName;
+                document.getElementById('department').value = employee.DepartmentID;
+                document.getElementById('startWorkYear').value = employee.StartWorkYear;
+                departmentId  =  employee.DepartmentID;
+            } catch (error) {
+                alert('Failed to fetch employee data.');
+            }
+        }
+
+        async function updateEmployee() {
+
+
+            const updatedEmployee = {
+                FirstName: document.getElementById('firstName').value,
+                LastName: document.getElementById('lastName').value,
+                DepartmentID: document.getElementById('department').value,
+                StartWorkYear: document.getElementById('startWorkYear').value
+            };
+
+            const updatedEmployeeSend = {
+                employee : updatedEmployee, 
+                token :  sessionStorage.token
+            }
+
+            try {
+                const response = await fetch(employeeUrl, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedEmployeeSend)
+                });
+                if (response.ok) {
+                    alert('Employee updated successfully.');
+                    sessionStorage.maxactions = sessionStorage.getItem('maxactions')-1
+                     if (sessionStorage.getItem('maxactions') == 0 ){ 
+                        alert("Enogh work for today <>")
+                        window.location.href = 'login.html';
+                        return;
+                    }
+
+                    window.location.href = 'employees.html';
+                } else {
+                    alert('Failed to update employee.');
+                }
+            } catch (error) {
+                alert('An error occurred while updating the employee.');
+            }
+        }
+
+        async function deleteEmployee() {
+            
+            const deleteEmployeeSend = {
+                token :  sessionStorage.token
+            }
+
+            if (confirm('Are you sure you want to delete this employee?')) {
+                try {
+                    const response = await fetch(employeeUrl, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(deleteEmployeeSend)
+                });
+                    if (response.ok) {
+                        alert('Employee deleted successfully.');
+                    
+                        sessionStorage.maxactions = sessionStorage.getItem('maxactions')-1
+                     if (sessionStorage.getItem('maxactions') == 0 ){ 
+                        alert("Enogh work for today <>")
+                        window.location.href = 'login.html';
+                        return;
+                    }
+                        window.location.href = 'employees.html';
+                    } else {
+                        alert('Failed to delete employee.');
+                    }
+                } catch (error) {
+                    alert('An error occurred while deleting the employee.');
+                }
+            }
+        }
+
+        function displayGreeting() {
+            const fullName = sessionStorage.getItem('FullName');
+            const maxactions = sessionStorage.getItem('maxactions');
+            const greetingElement = document.getElementById('greeting');
+            if (fullName) {
+                greetingElement.textContent = `Hi ${fullName}, You have ${maxactions} actions left`;
+            }
+        }
+
+        window.onload = () => {
+            fetchEmployee();
+            fetchDepartments();
+            displayGreeting();
+        };
+    </script>
+</body>
+</html>

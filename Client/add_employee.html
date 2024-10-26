@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Employee Management</title>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav class="mb-4">
+                <ul class="nav justify-content-center">
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="employees.html">Employees</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="add_employee.html">Add Employee</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="departments.html">Departments</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="add_department.html">New Department</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="shifts.html">Shifts</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="users.html">Users</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="login.html">Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+
+    <main>
+        <div class="container">
+            <h4 id="greeting"></h4>
+            <h2>Create New Employee</h2>
+            <form id="employee-form">
+                <table class="table-form">
+                    <tr>
+                        <td><label for="firstName">First Name</label></td>
+                        <td><input type="text" class="form-control" id="firstName" required /></td>
+                    </tr>
+                    <tr>
+                        <td><label for="lastName">Last Name</label></td>
+                        <td><input type="text" class="form-control" id="lastName" required /></td>
+                    </tr>
+                    <tr>
+                        <td><label for="startWorkYear">Start Work Year</label></td>
+                        <td><input type="number" class="form-control" id="startWorkYear" required /></td>
+                    </tr>
+                    <tr>
+                        <td><label for="department">Department</label></td>
+                        <td>
+                            <select class="form-control" id="department" required>
+                                <option value="" disabled selected>Select a department</option> <!-- Default option -->
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <button type="button" class="btn" onclick="saveEmployee()">Save</button>
+                            <button type="button" class="btn btn-secondary" onclick="cancel()">Cancel</button>
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        const port = sessionStorage.getItem('serverMode'); 
+        const departmentUrl = `http://localhost:${port}/departments/`;
+        const employeeUrl = `http://localhost:${port}/employees/`;
+
+        async function fetchDepartments() {
+            try {
+                const response = await fetch(departmentUrl);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const departments = await response.json();
+                console.log(departments); // Check what departments are being returned
+
+                const departmentSelect = document.getElementById('department');
+                
+                // Clear any existing options
+                departmentSelect.innerHTML = '';
+
+                // Add a default option
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.disabled = true;
+                defaultOption.selected = true;
+                defaultOption.textContent = 'Select a department';
+                departmentSelect.appendChild(defaultOption);
+
+                // Populate department options
+                departments.forEach(department => {
+                    const option = document.createElement('option');
+                    option.value = department._id; // Use department ID as value
+                    option.textContent = department.Name; // Use the correct property for department name
+                    departmentSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error fetching departments:', error);
+                alert('Failed to load departments.');
+            }
+        }
+
+        async function saveEmployee() {
+            const newEmployee = {
+                FirstName: document.getElementById('firstName').value,
+                LastName: document.getElementById('lastName').value,
+                StartWorkYear: parseInt(document.getElementById('startWorkYear').value, 10),
+                DepartmentID: document.getElementById('department').value
+            };
+
+
+            const newEmployeeSend = {
+                employee : newEmployee, 
+                token :  sessionStorage.token
+            }
+
+
+
+            try {
+                const response = await fetch(employeeUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newEmployeeSend),
+                });
+                if (response.ok) {
+                    alert('Employee created successfully.');
+
+                    sessionStorage.maxactions = sessionStorage.getItem('maxactions')-1
+                     if (sessionStorage.getItem('maxactions') == 0 ){ 
+                        alert("Enogh work for today <>")
+                        window.location.href = 'login.html';
+                        return;
+                    }
+
+
+                     window.location.href = 'employees.html'; // Redirect to employee list
+
+                } else {
+                    alert('Failed to create employee.');
+                }
+            } catch (error) {
+                console.error('Error creating employee:', error);
+                alert('An error occurred while creating the employee.');
+            }
+        }
+
+        function cancel() {
+            window.location.href = 'employees.html'; // Redirect to employee list
+        }
+
+        function displayGreeting() {
+            const fullName = sessionStorage.getItem('FullName');
+            const maxactions = sessionStorage.getItem('maxactions');
+            const greetingElement = document.getElementById('greeting');
+            if (fullName) {
+                greetingElement.textContent = `Hi ${fullName}, You have ${maxactions} actions left`;
+            } else {
+                greetingElement.textContent = 'Hi there!';
+            }
+        }
+
+        // Fetch departments on page load
+        window.onload = fetchDepartments;
+        
+        // Initial fetch of shifts
+        displayGreeting();
+    </script>
+</body>
+</html>

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Shifts Management</title>
+    <style>
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+    <header>
+        <div class="container">
+            <nav class="mb-4">
+                <ul class="nav justify-content-center">
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="employees.html">Employees</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="add_employee.html">Add Employee</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="departments.html">Departments</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="add_department.html">New Department</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="shifts.html">Shifts</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="users.html">Users</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="login.html">Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <h4 id="greeting"></h4>
+            <h2>Shifts Management</h2>
+
+            <!-- Add Shift Form in a Table -->
+            <table class="table mb-4 mt-4">
+                <tr>
+                    <td>
+                        <label for="shiftDate">Shift Date</label>
+                        <input type="date" class="form-control" id="shiftDate" required>
+                    </td>
+                    <td>
+                        <label for="startingHour">Starting Hour</label>
+                        <input type="number" class="form-control" id="startingHour" min="0" max="23" required>
+                    </td>
+                    <td>
+                        <label for="endingHour">Ending Hour</label>
+                        <input type="number" class="form-control" id="endingHour" min="0" max="23" required>
+                    </td>
+                    <td>
+                        <button type="submit" class="btn btn-primary" id="addShiftButton" onclick="addShift()">Add Shift</button>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="table mt-4">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Starting Hour</th>
+                        <th>Ending Hour</th>
+                        <th>Allocate Employees</th>
+                        <th>Edit</th>
+                    </tr>
+                </thead>
+                <tbody id="shiftTableBody">
+                    <!-- Shifts data will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Allocate Employee Modal -->
+    <div id="allocateEmployeeModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAllocateModal()">&times;</span>
+            <h2>Allocate Employee to Shift</h2>
+            <div id="employeeList">
+                <!-- List of employees will be populated here -->
+            </div>
+            <button class="btn btn-primary" onclick="allocateEmployee()">Allocate</button>
+        </div>
+    </div>
+
+    <!-- Edit Shift Modal -->
+    <div id="editShiftModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditModal()">&times;</span>
+            <h2>Edit Shift</h2>
+            <label for="editShiftDate">Shift Date</label>
+            <input type="date" class="form-control" id="editShiftDate" required>
+            <label for="editStartingHour">Starting Hour</label>
+            <input type="number" class="form-control" id="editStartingHour" min="0" max="23" required>
+            <label for="editEndingHour">Ending Hour</label>
+            <input type="number" class="form-control" id="editEndingHour" min="0" max="23" required>
+            <button class="btn btn-primary" onclick="updateShift()">Update Shift</button>
+        </div>
+    </div>
+
+    <script>
+        const port = sessionStorage.getItem('serverMode'); 
+        const shiftsUrl = `http://localhost:${port}/shifts/`;
+        const employeesUrl = `http://localhost:${port}/employees`;
+
+
+        let currentShiftId;
+        let selectedEmployeeId;
+
+        // Helper function to format date to DD/MM/YYYY
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        // Fetch and display all shifts
+        async function fetchShifts() {
+            try {
+                const response = await fetch(shiftsUrl);
+                const shifts = await response.json();
+                populateShiftTable(shifts);
+            } catch (error) {
+                console.error('Error fetching shifts:', error);
+            }
+        }
+
+        // Populate shifts in the table
+        function populateShiftTable(shifts) {
+            const tableBody = document.getElementById('shiftTableBody');
+            tableBody.innerHTML = ''; // Clear existing rows
+
+            shifts.forEach(shift => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${formatDate(shift.Date)}</td>
+                    <td>${shift.StartingHour}:00</td>
+                    <td>${shift.EndingHour}:00</td>
+                    <td><button class="btn btn-secondary" onclick="openAllocateEmployeeModal('${shift._id}')">Allocate Employees</button></td>
+                    <td><button class="btn btn-warning" onclick="editShift('${shift._id}')">Edit</button></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Add a new shift
+        async function addShift() {
+            const shiftDate = document.getElementById('shiftDate').value;
+            const startingHour = parseInt(document.getElementById('startingHour').value);
+            const endingHour = parseInt(document.getElementById('endingHour').value);
+
+            const shiftData = {
+                Date: shiftDate,
+                StartingHour: startingHour,
+                EndingHour: endingHour
+            };
+
+            const shiftDataSend = {
+                shift : shiftData, 
+                token :  sessionStorage.token
+            }
+
+            try {
+                const response = await fetch(shiftsUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(shiftDataSend)
+                });
+                if (response.ok) {
+                    fetchShifts(); // Refresh the table
+                    alert("Shift Added");
+                } else {
+                    console.error('Error adding shift:', await response.text());
+                }
+            } catch (error) {
+                console.error('Error adding shift:', error);
+            }
+
+            
+            sessionStorage.maxactions = sessionStorage.getItem('maxactions')-1
+            if (sessionStorage.getItem('maxactions') == 0 ){
+                location.href = './login.html'; 
+                alert("Enogh work for today <>")
+            }
+            displayGreeting();
+        }
+
+        // Open the modal to allocate employees
+        async function openAllocateEmployeeModal(shiftId) {
+            currentShiftId = shiftId;
+            document.getElementById('allocateEmployeeModal').style.display = 'block'; // Show modal
+
+            // Fetch employees
+            try {
+                const response = await fetch(employeesUrl);
+                const employees = await response.json();
+                populateEmployeeList(employees);
+            } catch (error) {
+                console.error('Error fetching employees:', error);
+            }
+        }
+
+        // Populate employee list in the modal
+        function populateEmployeeList(employees) {
+            const employeeListDiv = document.getElementById('employeeList');
+            employeeListDiv.innerHTML = ''; // Clear existing content
+
+            employees.forEach(employee => {
+                const employeeItem = document.createElement('div');
+                employeeItem.innerHTML = `
+                    <input type="radio" name="employee" value="${employee._id}" onclick="selectEmployee('${employee._id}')">
+                    ${employee.FirstName} ${employee.LastName}
+                `;
+                employeeListDiv.appendChild(employeeItem);
+            });
+        }
+
+        // Select employee from the list
+        function selectEmployee(employeeId) {
+            selectedEmployeeId = employeeId;
+        }
+
+        // Allocate an employee to the current shift
+        async function allocateEmployee() {
+            if (!selectedEmployeeId) {
+                alert('Please select an employee.');
+                return;
+            }
+
+            const allocationData = {
+                shift : { employeeId: selectedEmployeeId }  ,
+                token :  sessionStorage.token
+            };
+
+            try {
+                const response = await fetch(`${shiftsUrl}${currentShiftId}/allocate`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(allocationData)
+                });
+
+                if (response.ok) {
+                    alert('Employee allocated successfully.');
+                    closeAllocateModal();
+                    fetchShifts(); // Refresh shifts table
+                } else {
+                    const errorText = await response.text();
+                    alert(errorText.replace(/(^"|"$)/g, ''));
+                }
+            } catch (error) {
+                console.error('Error allocating employee:', error);
+                alert('An error occurred while allocating the employee. Please try again.');
+            }
+
+            sessionStorage.maxactions = sessionStorage.getItem('maxactions')-1
+            if (sessionStorage.getItem('maxactions') === 0 ){
+                location.href = './login.html'; 
+                alert("Enogh work for today <>")
+            }
+            displayGreeting();
+        }
+
+        // Close the allocate employee modal
+        function closeAllocateModal() {
+            document.getElementById('allocateEmployeeModal').style.display = 'none';
+            selectedEmployeeId = null; // Reset selected employee
+        }
+
+        // Edit the selected shift
+        async function editShift(shiftId) {
+            currentShiftId = shiftId;
+            const response = await fetch(`${shiftsUrl}/${shiftId}`);
+            const shift = await response.json();
+
+            document.getElementById('editShiftDate').value = shift.Date.split("T")[0];;
+            document.getElementById('editStartingHour').value = shift.StartingHour;
+            document.getElementById('editEndingHour').value = shift.EndingHour;
+
+            document.getElementById('editShiftModal').style.display = 'block'; // Show modal
+        }
+
+        // Update the shift details
+        async function updateShift() {
+            const updatedShiftData = {
+                Date: document.getElementById('editShiftDate').value,
+                StartingHour: parseInt(document.getElementById('editStartingHour').value),
+                EndingHour: parseInt(document.getElementById('editEndingHour').value)
+            };
+
+            const shiftDataSend = {
+                shift : updatedShiftData, 
+                token :  sessionStorage.token
+            }
+            try {
+                const response = await fetch(`${shiftsUrl}${currentShiftId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(shiftDataSend)
+                });
+
+                if (response.ok) {
+                    alert("Shift updated successfully.");
+                    closeEditModal();
+                    fetchShifts(); // Refresh the table
+                } else {
+                    console.error('Error updating shift:', await response.text());
+                }
+            } catch (error) {
+                console.error('Error updating shift:', error);
+            }
+
+            sessionStorage.maxactions = sessionStorage.getItem('maxactions')-1
+            if (sessionStorage.getItem('maxactions') == 0 ){
+                location.href = './login.html'; 
+                alert("Enogh work for today <>")
+            }
+            displayGreeting();
+
+        }
+
+        // Close the edit shift modal
+        function closeEditModal() {
+            document.getElementById('editShiftModal').style.display = 'none';
+        }
+
+                // Display personalized greeting
+        function displayGreeting() {
+            const fullName = sessionStorage.getItem('FullName');
+            const maxactions = sessionStorage.getItem('maxactions');
+            const greetingElement = document.getElementById('greeting');
+            if (fullName) {
+                greetingElement.textContent = `Hi ${fullName}, You have ${maxactions} actions left`;
+            } else {
+                greetingElement.textContent = 'Hi there!';
+            }
+        }
+
+        // Initial fetch of shifts
+        displayGreeting();
+        fetchShifts();
+    </script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Employee Management</title>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav class="mb-4">
+                <ul class="nav justify-content-center">
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="employees.html">Employees</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="add_employee.html">Add Employee</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="departments.html">Departments</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="add_department.html">New Department</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="shifts.html">Shifts</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="users.html">Users</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="login.html">Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+
+    <main>
+        <div class="container">
+            <h4 id="greeting"></h4>
+            <h2>Employee List</h2>
+            <div class="actions">
+                <button class="btn" onclick="window.location.href='add_employee.html'">New Employee</button>
+
+                <label for="departments">Select Department:</label>
+                <input type="text" id="departmentSearch" placeholder="Search Departments..." class="form-control mb-2" oninput="searchDepartments()">
+                <select id="departments" class="form-control" onchange="filterByDepartment()">
+                    <option value="">All Departments</option>
+                    <!-- Options will be populated here -->
+                </select>
+            </div>
+
+            <table class="table mt-4">
+                <thead>
+                    <tr>
+                        <th>Full Name</th>
+                        <th>Department</th>
+                        <th>Shifts</th>
+                    </tr>
+                </thead>
+                <tbody id="employee-table-body">
+                    <!-- Employee data will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        const port = sessionStorage.getItem('serverMode'); 
+        const departmentsUrl = `http://localhost:${port}/departments`;
+        const employeesUrl = `http://localhost:3000/employees/EmployeesPage`;
+        let departmentsList = [];
+
+        // Fetch departments from the API and populate the department filter dropdown
+        async function fetchDepartments() {
+            try {
+                const response = await fetch(departmentsUrl);
+                const departments = await response.json();
+                departmentsList = departments;
+                populateDepartmentDropdown(departments);
+            } catch (error) {
+                console.error('Error fetching departments:', error);
+            }
+        }
+
+        // Populate department dropdown with the fetched data
+        function populateDepartmentDropdown(departments) {
+            const departmentDropdown = document.getElementById('departments');
+            departmentDropdown.innerHTML = '<option value="">All Departments</option>'; // Clear existing options
+            departments.forEach(department => {
+                const option = document.createElement('option');
+                option.value = department.Name;
+                option.textContent = department.Name;
+                departmentDropdown.appendChild(option);
+            });
+        }
+
+        // Search department names from the dropdown
+        function searchDepartments() {
+            const searchInput = document.getElementById('departmentSearch').value.toLowerCase();
+            const filteredDepartments = departmentsList.filter(dept =>
+                dept.Name.toLowerCase().includes(searchInput)
+            );
+            populateDepartmentDropdown(filteredDepartments);
+        }
+
+        // Fetch employee data and populate the table
+        async function fetchEmployees() {
+            try {
+                const response = await fetch(employeesUrl);
+                const employees = await response.json();
+                populateTable(employees);
+            } catch (error) {
+                console.error('Error fetching employee data:', error);
+            }
+        }
+
+        // Populate the employee table
+        function populateTable(employees) {
+            const tableBody = document.getElementById('employee-table-body');
+            tableBody.innerHTML = ''; // Clear existing rows
+
+            employees.forEach(employee => {
+                const fullName = employee["Full name"];
+                const department = employee.Department || "Not assigned";
+                const id = employee.Id;
+
+                // Format shifts
+                const shiftsList = employee.Shifts.map(shift => {
+                    return `${shift.Date.split('T')[0]} ${shift.StartingHour}:00 - ${shift.EndingHour}:00`;
+                }).join(', ');
+
+                const row = document.createElement('tr');
+                row.setAttribute('data-department', department);
+
+                // Conditional check to disable department link if it's "Not assigned"
+                const departmentCell = department === "Not assigned"
+                    ? `<td>${department}</td>`
+                    : `<td><a href="edit_department.html?departmentId=${department.replace(/\s/g, '_')}">${department}</a></td>`;
+
+                row.innerHTML = `
+                    <td><a href="edit_employee.html?employeeId=${id}">${fullName}</a></td>
+                    ${departmentCell}
+                    <td>${shiftsList}</td>
+                `;
+
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Filter employees by selected department
+        function filterByDepartment() {
+            const departmentFilter = document.getElementById('departments').value;
+            const rows = document.querySelectorAll('#employee-table-body tr');
+
+            rows.forEach(row => {
+                if (departmentFilter === "" || row.dataset.department === departmentFilter) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // Display personalized greeting
+        function displayGreeting() {
+            const fullName = sessionStorage.getItem('FullName');
+            const maxactions = sessionStorage.getItem('maxactions');
+            const greetingElement = document.getElementById('greeting');
+            if (fullName) {
+                greetingElement.textContent = `Hi ${fullName}, You have ${maxactions} actions left`;
+            } else {
+                greetingElement.textContent = 'Hi there!';
+            }
+        }
+
+        // Fetch data when the page loads
+        window.onload = function() {
+            fetchDepartments();
+            fetchEmployees();
+            displayGreeting();
+        };
+    </script>
+</body>
+</html>

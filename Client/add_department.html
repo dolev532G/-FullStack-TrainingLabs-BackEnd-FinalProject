@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Employee Management</title>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav class="mb-4">
+                <ul class="nav justify-content-center">
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="employees.html">Employees</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="add_employee.html">Add Employee</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="departments.html">Departments</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="add_department.html">New Department</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="shifts.html">Shifts</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="users.html">Users</a></li>
+                    <li class="nav-item"><a class="nav-link custom-nav-link" href="login.html">Logout</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container mt-5">
+        <h4 id="greeting"></h4>
+        <h1>Create New Department</h1>
+        <form id="newDepartmentForm">
+            <table class="table table-borderless">
+                <tbody>
+                    <tr>
+                        <td><label for="name">Department Name</label></td>
+                        <td><label for="manager">Department Manager</label></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="text" class="form-control" id="name" placeholder="Enter department name" required>
+                        </td>
+                        <td>
+                            <select class="form-control" id="manager" required>
+                                <option value="">Select a manager</option>
+                            </select>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <button type="button" class="btn btn-primary" onclick="saveDepartment()">Save</button>
+            <a href="departments.html" class="btn btn-secondary">Cancel</a>
+        </form>
+    </main>
+
+    <script>
+        const port = sessionStorage.getItem('serverMode'); 
+        const urlDepartments = `http://localhost:${port}/departments/`;
+        const urlEmployees = `http://localhost:${port}/employees/`;
+
+
+        async function fetchEmployees() {
+            try {
+                const response = await fetch(urlEmployees);
+                if (response.ok) {
+                    const employees = await response.json();
+                    const managerSelect = document.getElementById('manager');
+                    employees.forEach(employee => {
+                        const option = document.createElement('option');
+                        option.value = employee._id; 
+                        option.textContent = `${employee.FirstName} ${employee.LastName}`; 
+                        managerSelect.appendChild(option);
+                    });
+                } else {
+                    console.error('Error fetching employees:', response.statusText);
+                }
+            } catch (error) {
+                console.error('Error fetching employees:', error);
+            }
+        }
+
+        async function saveDepartment() {
+            const name = document.getElementById('name').value;
+            const managerId = document.getElementById('manager').value; 
+
+            const departmentData = {
+                Name: name,
+                Manager: managerId, 
+            };
+
+            const departmentDataSend = {
+                department : departmentData, 
+                token :  sessionStorage.token
+            }
+
+            try {
+                const response = await fetch(urlDepartments, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(departmentDataSend)
+                });
+
+                if (response.ok) {
+                    alert('Department created successfully!');
+                    window.location.href = 'departments.html'; 
+                } else {
+                    const errorMessage = await response.json();
+                    alert(`Error creating department: ${errorMessage}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error creating department. Please try again.');
+            }
+
+            sessionStorage.maxactions = sessionStorage.getItem('maxactions') - 1;
+            if (sessionStorage.getItem('maxactions') == 0) {
+                alert("Enough work for today.");
+                location.href = './login.html'; 
+            }
+        }
+
+        function displayGreeting() {
+            const fullName = sessionStorage.getItem('FullName');
+            const maxactions = sessionStorage.getItem('maxactions');
+            const greetingElement = document.getElementById('greeting');
+            if (fullName) {
+                greetingElement.textContent = `Hi ${fullName}, You have ${maxactions} actions left`;
+            } else {
+                greetingElement.textContent = 'Hi there!';
+            }
+        }
+
+        // Initial fetch of shifts
+        displayGreeting();
+
+        window.onload = fetchEmployees;
+    </script>
+</body>
+</html>

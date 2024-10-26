@@ -1,0 +1,49 @@
+{
+    "_id" : ObjectId("671abe995d84e800d41a922d"),
+    "FirstName" : "My",
+    "LastName" : "1",
+    "StartWorkYear" : NumberInt(1),
+    "DepartmentID" : ObjectId("6718c94751cd6b0e11900482")
+}
+{
+    "_id" : ObjectId("671acdd6a15e98679d7dceb0"),
+    "FirstName" : "My",
+    "LastName" : "2",
+    "StartWorkYear" : "2024",
+    "DepartmentID" : ObjectId("671a2233ffe8aee0d2d5dcf1")
+}
+{
+    "_id" : ObjectId("671acdf1733c0b7d80484795"),
+    "FirstName" : "My",
+    "LastName" : "3",
+    "StartWorkYear" : "2000",
+    "DepartmentID" : ObjectId("671a2233ffe8aee0d2d5dcf1")
+}
+{
+    "_id" : ObjectId("671b9f086db89b1d35904e60"),
+    "FirstName" : "My",
+    "LastName" : "4",
+    "StartWorkYear" : NumberInt(500),
+    "DepartmentID" : ObjectId("671b8f89bf06146a9296d732")
+}
+{
+    "_id" : ObjectId("671bb714f5a0822a2a39aaea"),
+    "FirstName" : "My",
+    "LastName" : "5",
+    "StartWorkYear" : NumberInt(32223),
+    "DepartmentID" : ObjectId("671bb72cf5a0822a2a39aaeb")
+}
+{
+    "_id" : ObjectId("671bc43c213744d944acfe7b"),
+    "FirstName" : "My",
+    "LastName" : "6",
+    "StartWorkYear" : NumberInt(2019),
+    "DepartmentID" : ObjectId("671a2233ffe8aee0d2d5dcf1")
+}
+{
+    "_id" : ObjectId("671ce91344e531dec9e80446"),
+    "FirstName" : "My",
+    "LastName" : "7",
+    "StartWorkYear" : NumberInt(2015),
+    "DepartmentID" : ObjectId("671b8f89bf06146a9296d732")
+}

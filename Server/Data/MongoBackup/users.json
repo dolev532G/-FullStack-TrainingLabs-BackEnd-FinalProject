@@ -1,0 +1,15 @@
+{
+    "_id" : ObjectId("67139f65a477624aa7a920ea"),
+    "FullName" : "Leanne Graham",
+    "Num_Of_actions" : NumberInt(8)
+}
+{
+    "_id" : ObjectId("67139f8fa477624aa7a920eb"),
+    "FullName" : "Ervin Howell",
+    "Num_Of_actions" : NumberInt(10)
+}
+{
+    "_id" : ObjectId("67139fada477624aa7a920ec"),
+    "FullName" : "Clementine Bauch",
+    "Num_Of_actions" : NumberInt(20)
+}
